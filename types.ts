@@ -2,10 +2,13 @@ export type ViewState = 'landing' | 'onboarding' | 'dashboard';
 
 export type CookedLevel = 'chilled' | 'managing' | 'cooked';
 
+export type Language = 'eng' | 'hieng' | 'marathi';
+
 export interface UserProfile {
   childAge: string;
   overwhelmScore: number;
   isJointFamily: boolean;
+  language: Language;
 }
 
 export interface ChatMessage {

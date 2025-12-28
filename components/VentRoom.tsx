@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { VENT_SYSTEM_INSTRUCTION } from '../constants';
 
 const VentRoom: React.FC = () => {
@@ -14,24 +14,23 @@ const VentRoom: React.FC = () => {
     setResponse('');
 
     try {
-        if (!process.env.API_KEY) {
+        const apiKey = import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+        if (!apiKey) {
             setResponse("I hear you. It's tough. You're doing okay.");
             return;
         }
 
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-        const result = await ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
-            contents: vent,
-            config: {
-                systemInstruction: VENT_SYSTEM_INSTRUCTION,
-            }
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ 
+            model: import.meta.env.VITE_GEMINI_MODEL || "gemini-2.5-flash"
         });
-
-        if (result.text) {
-            setResponse(result.text);
-            setHasVented(true);
-        }
+        
+        const prompt = VENT_SYSTEM_INSTRUCTION + "\n\nUser: " + vent;
+        const result = await model.generateContent(prompt);
+        const responseText = await result.response;
+        
+        setResponse(responseText.text());
+        setHasVented(true);
     } catch (e) {
         setResponse("System overloaded. But your feelings are valid. Take a breath.");
     } finally {

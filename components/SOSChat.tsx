@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { GoogleGenAI, Chat, GenerateContentResponse } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { UserProfile, ChatMessage } from '../types';
 import { SOS_SYSTEM_INSTRUCTION } from '../constants';
 
@@ -80,20 +80,23 @@ const SOSChat: React.FC<SOSChatProps> = ({ userProfile }) => {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  // Ref to hold the chat instance so it persists between renders
-  const chatSessionRef = useRef<Chat | null>(null);
+  // Ref to hold the model instance
+  const modelRef = useRef<any>(null);
 
   useEffect(() => {
     // Initialize AI Client
-    if (process.env.API_KEY && !chatSessionRef.current) {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-        chatSessionRef.current = ai.chats.create({
-            model: 'gemini-3-flash-preview',
-            config: {
-                systemInstruction: SOS_SYSTEM_INSTRUCTION(userProfile),
-                temperature: 0.4, // Lower temperature for more deterministic/survival answers
-            },
-        });
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    console.log('API Key available:', !!apiKey); // Debug log
+    if (apiKey && !modelRef.current) {
+        try {
+            const genAI = new GoogleGenerativeAI(apiKey);
+            modelRef.current = genAI.getGenerativeModel({ 
+                model: import.meta.env.VITE_GEMINI_MODEL || "gemini-2.5-flash"
+            });
+            console.log('AI model initialized successfully');
+        } catch (error) {
+            console.error('Failed to initialize AI:', error);
+        }
     }
   }, [userProfile]);
 
@@ -104,7 +107,17 @@ const SOSChat: React.FC<SOSChatProps> = ({ userProfile }) => {
   useEffect(scrollToBottom, [messages]);
 
   const handleSend = async (text: string) => {
-    if (!text.trim() || !chatSessionRef.current) return;
+    if (!text.trim() || !modelRef.current) {
+        if (!modelRef.current) {
+            setMessages(prev => [...prev, { 
+                id: Date.now().toString(), 
+                role: 'model', 
+                text: "AI not available. Check your API key in .env file.", 
+                isThinking: false 
+            }]);
+        }
+        return;
+    }
 
     const userMsg: ChatMessage = { id: Date.now().toString(), role: 'user', text };
     setMessages(prev => [...prev, userMsg]);
@@ -112,28 +125,27 @@ const SOSChat: React.FC<SOSChatProps> = ({ userProfile }) => {
     setIsLoading(true);
 
     try {
-        const result = await chatSessionRef.current.sendMessageStream({ message: text });
+        const prompt = SOS_SYSTEM_INSTRUCTION(userProfile) + "\n\nUser: " + text;
+        const result = await modelRef.current.generateContent(prompt);
+        const response = await result.response;
+        const botText = response.text();
         
-        let fullText = '';
-        const botMsgId = (Date.now() + 1).toString();
+        console.log('AI Response received:', botText.substring(0, 50) + '...'); // Debug log
         
-        // Add placeholder message
-        setMessages(prev => [...prev, { id: botMsgId, role: 'model', text: '', isThinking: true }]);
-
-        for await (const chunk of result) {
-            const c = chunk as GenerateContentResponse;
-            if (c.text) {
-                fullText += c.text;
-                setMessages(prev => prev.map(m => 
-                    m.id === botMsgId 
-                        ? { ...m, text: fullText, isThinking: false } 
-                        : m
-                ));
-            }
-        }
+        setMessages(prev => [...prev, { 
+            id: (Date.now() + 1).toString(), 
+            role: 'model', 
+            text: botText, 
+            isThinking: false 
+        }]);
     } catch (error) {
-        console.error("AI Error", error);
-        setMessages(prev => [...prev, { id: Date.now().toString(), role: 'model', text: "Connection cut. Try simplified steps: 1. Breathe. 2. Put baby in safe spot. 3. Walk away for 2 mins.", isThinking: false }]);
+        console.error("AI Error Details:", error);
+        setMessages(prev => [...prev, { 
+            id: Date.now().toString(), 
+            role: 'model', 
+            text: "Connection cut. Try simplified steps: 1. Breathe. 2. Put baby in safe spot. 3. Walk away for 2 mins.", 
+            isThinking: false 
+        }]);
     } finally {
         setIsLoading(false);
     }
