@@ -1,12 +1,18 @@
 import React, { useState } from 'react';
 import { MOCK_HELPERS } from '../constants';
-import { HelperProfile } from '../types';
+import { HelperProfile, UserProfile } from '../types';
+import { getTranslation } from '../translations';
 
-const ProxyService: React.FC = () => {
+interface ProxyServiceProps {
+  userProfile: UserProfile;
+}
+
+const ProxyService: React.FC<ProxyServiceProps> = ({ userProfile }) => {
   const [activeType, setActiveType] = useState<'all' | 'nanny' | 'dadi'>('all');
   const [bookedHelper, setBookedHelper] = useState<string | null>(null);
   const [translatorText, setTranslatorText] = useState('');
   const [translatedText, setTranslatedText] = useState('');
+  const t = (key: string) => getTranslation(userProfile.language, key);
 
   // Filter logic
   const filteredHelpers = MOCK_HELPERS.filter(h => 
@@ -17,7 +23,7 @@ const ProxyService: React.FC = () => {
     setBookedHelper(id);
     // In a real app, this would open a payment gateway or booking confirmation
     setTimeout(() => {
-        alert("Booking confirmed! Your Proxy is on the way. Live Link sent to WhatsApp.");
+        alert(t('bookingConfirmed'));
         setBookedHelper(null);
     }, 1500);
   };
@@ -33,13 +39,13 @@ const ProxyService: React.FC = () => {
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-2xl font-black text-white">The Village 🏘️</h2>
-          <p className="text-xs text-gray-400">Outsource the chaos. Instant help.</p>
+          <h2 className="text-2xl font-black text-white">{t('theVillage')}</h2>
+          <p className="text-xs text-gray-400">{t('outsourceChaos')}</p>
         </div>
         <div className="bg-gray-800 p-2 rounded-lg border border-gray-700">
            <div className="flex items-center gap-2">
              <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
-             <span className="text-[10px] font-mono text-gray-300">LIVE CAM: OFF</span>
+             <span className="text-[10px] font-mono text-gray-300">{t('liveCam')}</span>
            </div>
         </div>
       </div>
@@ -56,7 +62,7 @@ const ProxyService: React.FC = () => {
                 : 'text-gray-500 hover:text-gray-300'
             }`}
           >
-            {type === 'all' ? 'All' : type === 'nanny' ? 'Micro-Nanny' : 'Dadi-on-Demand'}
+            {type === 'all' ? t('all') : type === 'nanny' ? t('microNanny') : t('dadiOnDemand')}
           </button>
         ))}
       </div>
@@ -68,7 +74,7 @@ const ProxyService: React.FC = () => {
             {/* Online Indicator */}
             <div className={`absolute top-4 right-4 flex items-center gap-1 ${helper.isOnline ? 'text-green-500' : 'text-gray-600'}`}>
                <div className={`w-2 h-2 rounded-full ${helper.isOnline ? 'bg-green-500' : 'bg-gray-600'}`}></div>
-               <span className="text-xs font-mono">{helper.isOnline ? 'Active' : 'Offline'}</span>
+               <span className="text-xs font-mono">{helper.isOnline ? t('active') : t('offline')}</span>
             </div>
 
             <div className="flex gap-4">
@@ -82,7 +88,7 @@ const ProxyService: React.FC = () => {
                 </h3>
                 <div className="flex flex-wrap gap-2 my-2">
                   <span className="text-xs bg-gray-700 px-2 py-1 rounded text-neon-purple font-mono border border-neon-purple/20">
-                     {helper.role === 'dadi' ? 'GRANDMOTHER' : 'PRO NANNY'}
+                     {helper.role === 'dadi' ? t('grandmother') : t('proNanny')}
                   </span>
                   <span className="text-xs bg-gray-700 px-2 py-1 rounded text-gray-300 font-mono">
                      ⭐ {helper.rating}
@@ -110,7 +116,7 @@ const ProxyService: React.FC = () => {
                                     : 'bg-white text-black hover:bg-neon-green'
                         }`}
                     >
-                        {bookedHelper === helper.id ? 'Request Sent!' : 'Book Now'}
+                        {bookedHelper === helper.id ? t('requestSent') : t('bookNow')}
                     </button>
                 </div>
               </div>
@@ -121,13 +127,13 @@ const ProxyService: React.FC = () => {
 
       {/* Vernacular Translator */}
       <div className="mt-8 bg-dark-800 p-4 rounded-xl border border-gray-700">
-         <h3 className="text-sm font-bold text-gray-400 mb-2 uppercase tracking-wide">Instruct Nanny (Translator)</h3>
+         <h3 className="text-sm font-bold text-gray-400 mb-2 uppercase tracking-wide">{t('instructNanny')}</h3>
          <div className="flex gap-2">
              <input 
                 type="text" 
                 value={translatorText}
                 onChange={(e) => setTranslatorText(e.target.value)}
-                placeholder="e.g. Don't give him sugar"
+                placeholder={t('translatePlaceholder')}
                 className="flex-1 bg-dark-900 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-neon-blue"
              />
              <button 

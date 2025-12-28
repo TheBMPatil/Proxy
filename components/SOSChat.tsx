@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { UserProfile, ChatMessage } from '../types';
 import { SOS_SYSTEM_INSTRUCTION } from '../constants';
+import { getTranslation } from '../translations';
 
 interface SOSChatProps {
   userProfile: UserProfile;
@@ -82,6 +83,7 @@ const SOSChat: React.FC<SOSChatProps> = ({ userProfile }) => {
   
   // Ref to hold the model instance
   const modelRef = useRef<any>(null);
+  const t = (key: string) => getTranslation(userProfile.language, key);
 
   useEffect(() => {
     // Initialize AI Client
@@ -151,19 +153,14 @@ const SOSChat: React.FC<SOSChatProps> = ({ userProfile }) => {
     }
   };
 
-  const quickPrompts = [
-    "Baby won't stop crying",
-    "I'm about to lose it",
-    "Refusing to eat",
-    "Dealing with unwanted advice"
-  ];
+  const quickPrompts = t('quickPrompts') as string[];
 
   return (
     <div className="flex flex-col h-full bg-dark-900 rounded-t-2xl">
       {/* Header */}
       <div className="p-4 border-b border-gray-800 flex items-center gap-2 shrink-0">
         <div className="w-2 h-2 rounded-full bg-neon-green animate-pulse"></div>
-        <h3 className="font-bold text-neon-green tracking-wide">SAHARA AI <span className="text-gray-500 font-normal text-xs ml-2">ONLINE</span></h3>
+        <h3 className="font-bold text-neon-green tracking-wide">{t('saharaOnline')}</h3>
       </div>
 
       {/* Chat Area */}
@@ -215,7 +212,7 @@ const SOSChat: React.FC<SOSChatProps> = ({ userProfile }) => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend(input)}
-            placeholder="Type crisis here..."
+            placeholder={t('typeCrisis')}
             className="flex-1 bg-dark-800 text-white rounded-full px-4 py-3 focus:outline-none focus:ring-1 focus:ring-neon-green placeholder-gray-600 text-sm"
             disabled={isLoading}
           />
